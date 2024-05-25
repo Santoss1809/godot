@@ -35,8 +35,6 @@
 bool MeshLibrary::_set(const StringName &p_name, const Variant &p_value) {
 	String prop_name = p_name;
 	if (prop_name.begins_with("item/")) {
-		print_line(prop_name);
-		print_line(p_value);
 		int idx = prop_name.get_slicec('/', 1).to_int();
 		String what = prop_name.get_slicec('/', 2);
 		if (!item_map.has(idx)) {
@@ -277,6 +275,29 @@ int MeshLibrary::get_last_unused_item_id() const {
 	}
 }
 
+void MeshLibrary::notify_mesh_library_properties_should_change() {
+	// Convert custom data to the new type.
+	for (int j = 0; j < item_map.size(); j++) {
+		item_map[j].custom_data.resize(get_custom_data_layers_count());
+		for (int i = 0; i < item_map[j].custom_data.size(); i++) {
+			if (item_map[j].custom_data[i].get_type() != get_custom_data_layer_type(i)) {
+				Variant new_val;
+				Callable::CallError error;
+				if (Variant::can_convert(item_map[j].custom_data[i].get_type(), get_custom_data_layer_type(i))) {
+					const Variant *args[] = { &item_map[j].custom_data[i] };
+					Variant::construct(get_custom_data_layer_type(i), new_val, args, 1, error);
+				} else {
+					Variant::construct(get_custom_data_layer_type(i), new_val, nullptr, 0, error);
+				}
+				item_map[j].custom_data.write[i] = new_val;
+			}
+		}
+	}
+
+	notify_property_list_changed();
+	emit_signal(CoreStringName(changed));
+}
+
 // Custom data.
 int MeshLibrary::get_custom_data_layers_count() const {
 	return custom_data_layers.size();
@@ -289,12 +310,6 @@ void MeshLibrary::add_custom_data_layer(int p_index) {
 	ERR_FAIL_INDEX(p_index, custom_data_layers.size() + 1);
 	custom_data_layers.insert(p_index, CustomDataLayer());
 
-	/*
-	for (KeyValue<int, Ref<TileSetSource>> source : sources) {
-		source.value->add_custom_data_layer(p_index);
-	}
-	*/
-
 	notify_property_list_changed();
 	emit_changed();
 }
@@ -304,11 +319,6 @@ void MeshLibrary::move_custom_data_layer(int p_from_index, int p_to_pos) {
 	ERR_FAIL_INDEX(p_to_pos, custom_data_layers.size() + 1);
 	custom_data_layers.insert(p_to_pos, custom_data_layers[p_from_index]);
 	custom_data_layers.remove_at(p_to_pos < p_from_index ? p_from_index + 1 : p_from_index);
-	/*
-	for (KeyValue<int, Ref<TileSetSource>> source : sources) {
-		source.value->move_custom_data_layer(p_from_index, p_to_pos);
-	}
-	*/
 	notify_property_list_changed();
 	emit_changed();
 }
@@ -374,12 +384,7 @@ void MeshLibrary::set_custom_data_layer_type(int p_layer_id, Variant::Type p_val
 	ERR_FAIL_INDEX(p_layer_id, custom_data_layers.size());
 	custom_data_layers.write[p_layer_id].type = p_value;
 
-	/*
-	for (KeyValue<int, Ref<TileSetSource>> &E_source : sources) {
-		E_source.value->notify_tile_data_properties_should_change();
-	}
-	*/
-
+	notify_mesh_library_properties_should_change();
 	emit_changed();
 }
 
@@ -442,7 +447,6 @@ Array MeshLibrary::_get_item_shapes(int p_item) const {
 
 // Custom data
 void MeshLibrary::set_custom_data(int p_item, String p_layer_name, Variant p_value) {
-	//ERR_FAIL_NULL(tile_set);
 	ERR_FAIL_COND_MSG(!item_map.has(p_item), "Requested for nonexistent MeshLibrary item '" + itos(p_item) + "'.");
 	int p_layer_id = get_custom_data_layer_by_name(p_layer_name);
 	ERR_FAIL_COND_MSG(p_layer_id < 0, vformat("MeshLibrary has no layer with name: %s", p_layer_name));
@@ -450,7 +454,6 @@ void MeshLibrary::set_custom_data(int p_item, String p_layer_name, Variant p_val
 }
 
 Variant MeshLibrary::get_custom_data(int p_item, String p_layer_name) const {
-	//ERR_FAIL_NULL_V(tile_set, Variant());
 	ERR_FAIL_COND_V_MSG(!item_map.has(p_item), Variant(), "Requested for nonexistent MeshLibrary item '" + itos(p_item) + "'.");
 	int p_layer_id = get_custom_data_layer_by_name(p_layer_name);
 	ERR_FAIL_COND_V_MSG(p_layer_id < 0, Variant(), vformat("MeshLibrary has no layer with name: %s", p_layer_name));

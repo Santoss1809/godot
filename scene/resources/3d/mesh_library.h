@@ -110,6 +110,7 @@ public:
 	int get_last_unused_item_id() const;
 
 	// Custom data
+	void notify_mesh_library_properties_should_change();
 	int get_custom_data_layers_count() const;
 	void add_custom_data_layer(int p_index = -1);
 	void move_custom_data_layer(int p_from_index, int p_to_pos);
