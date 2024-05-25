@@ -70,6 +70,13 @@ bool MeshLibrary::_set(const StringName &p_name, const Variant &p_value) {
 		} else if (what == "navigation_layers") {
 			set_item_navigation_layers(idx, p_value);
 		} else if (what == "custom_data") {
+			int layer_index = p_value.get("layer_id");
+			ERR_FAIL_COND_V(layer_index < 0, false);
+
+			if (layer_index >= item_map[idx].custom_data.size()) {
+				item_map[idx].custom_data.resize(layer_index + 1);
+			}
+
 			set_custom_data_by_layer_id(idx, p_value.get("layer_id"), p_value.get("value"));
 		} else {
 			return false;
@@ -277,19 +284,19 @@ int MeshLibrary::get_last_unused_item_id() const {
 
 void MeshLibrary::notify_mesh_library_properties_should_change() {
 	// Convert custom data to the new type.
-	for (int j = 0; j < item_map.size(); j++) {
-		item_map[j].custom_data.resize(get_custom_data_layers_count());
-		for (int i = 0; i < item_map[j].custom_data.size(); i++) {
-			if (item_map[j].custom_data[i].get_type() != get_custom_data_layer_type(i)) {
+	for (int i = 0; i < item_map.size(); i++) {
+		item_map[i].custom_data.resize(get_custom_data_layers_count());
+		for (int j = 0; j < item_map[i].custom_data.size(); j++) {
+			if (item_map[i].custom_data[j].get_type() != get_custom_data_layer_type(j)) {
 				Variant new_val;
 				Callable::CallError error;
-				if (Variant::can_convert(item_map[j].custom_data[i].get_type(), get_custom_data_layer_type(i))) {
-					const Variant *args[] = { &item_map[j].custom_data[i] };
-					Variant::construct(get_custom_data_layer_type(i), new_val, args, 1, error);
+				if (Variant::can_convert(item_map[i].custom_data[j].get_type(), get_custom_data_layer_type(j))) {
+					const Variant *args[] = { &item_map[i].custom_data[j] };
+					Variant::construct(get_custom_data_layer_type(j), new_val, args, 1, error);
 				} else {
-					Variant::construct(get_custom_data_layer_type(i), new_val, nullptr, 0, error);
+					Variant::construct(get_custom_data_layer_type(j), new_val, nullptr, 0, error);
 				}
-				item_map[j].custom_data.write[i] = new_val;
+				item_map[i].custom_data.write[j] = new_val;
 			}
 		}
 	}
@@ -336,11 +343,6 @@ void MeshLibrary::remove_custom_data_layer(int p_index) {
 		}
 	}
 	custom_data_layers_by_name.erase(to_erase);
-	/*
-	for (KeyValue<int, Ref<TileSetSource>> source : sources) {
-		source.value->remove_custom_data_layer(p_index);
-	}
-	*/
 	notify_property_list_changed();
 	emit_changed();
 }
@@ -463,7 +465,6 @@ Variant MeshLibrary::get_custom_data(int p_item, String p_layer_name) const {
 void MeshLibrary::set_custom_data_by_layer_id(int p_item, int p_layer_id, Variant p_value) {
 	ERR_FAIL_INDEX(p_layer_id, item_map[p_item].custom_data.size());
 	item_map[p_item].custom_data.write[p_layer_id] = p_value;
-	// TODO chnage later this
 	emit_changed();
 }
 
@@ -515,6 +516,8 @@ void MeshLibrary::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_custom_data", "item", "layer_name"), &MeshLibrary::get_custom_data);
 	ClassDB::bind_method(D_METHOD("set_custom_data_by_layer_id", "item", "layer_id", "value"), &MeshLibrary::set_custom_data_by_layer_id);
 	ClassDB::bind_method(D_METHOD("get_custom_data_by_layer_id", "item", "layer_id"), &MeshLibrary::get_custom_data_by_layer_id);
+	ADD_ARRAY("custom_data_layers", "custom_data_layer_");
+
 }
 
 MeshLibrary::MeshLibrary() {
