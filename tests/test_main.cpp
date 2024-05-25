@@ -106,6 +106,7 @@
 #include "tests/scene/test_code_edit.h"
 #include "tests/scene/test_color_picker.h"
 #include "tests/scene/test_control.h"
+#include "tests/scene/test_mesh_library.h"
 #include "tests/scene/test_curve.h"
 #include "tests/scene/test_curve_2d.h"
 #include "tests/scene/test_curve_3d.h"
