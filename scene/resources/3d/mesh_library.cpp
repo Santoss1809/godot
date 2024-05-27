@@ -136,7 +136,16 @@ void MeshLibrary::_get_property_list(List<PropertyInfo> *p_list) const {
 		p_list->push_back(PropertyInfo(Variant::TRANSFORM3D, prop_name + PNAME("navigation_mesh_transform"), PROPERTY_HINT_NONE, "suffix:m"));
 		p_list->push_back(PropertyInfo(Variant::INT, prop_name + PNAME("navigation_layers"), PROPERTY_HINT_LAYERS_3D_NAVIGATION));
 		p_list->push_back(PropertyInfo(Variant::OBJECT, prop_name + PNAME("preview"), PROPERTY_HINT_RESOURCE_TYPE, "Texture2D", PROPERTY_USAGE_DEFAULT));
-		p_list->push_back(PropertyInfo(Variant::INT, prop_name + PNAME("custom_data"), PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
+		p_list->push_back(PropertyInfo(Variant::NIL, prop_name + PNAME("custom_data"), PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
+
+		String argt = "Any";
+		for (int i = 1; i < Variant::VARIANT_MAX; i++) {
+			argt += "," + Variant::get_type_name(Variant::Type(i));
+		}
+		for (int i = 0; i < custom_data_layers.size(); i++) {
+			p_list->push_back(PropertyInfo(Variant::STRING, vformat("custom_data_layer_%d/name", i)));
+			p_list->push_back(PropertyInfo(Variant::INT, vformat("custom_data_layer_%d/type", i), PROPERTY_HINT_ENUM, argt));
+		}
 	}
 }
 
